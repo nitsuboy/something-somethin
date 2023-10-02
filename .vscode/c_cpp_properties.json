@@ -1,0 +1,21 @@
+{
+    "configurations": [
+        {
+            "name": "Win32",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "C:/Program Files (x86)/Dev-Cpp/MinGW32/include"
+            ],
+            "defines": [
+                "_DEBUG",
+                "UNICODE",
+                "_UNICODE"
+            ],
+            "compilerPath": "C:/Program Files (x86)/Dev-Cpp/MinGW32/bin/cpp",
+            "compilerArgs": [
+                "-lglu32 -lglut32 -lopengl32"
+            ]
+        }
+    ],
+    "version": 4
+}
