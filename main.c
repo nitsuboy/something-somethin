@@ -1,7 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "C:/MinGW/include/GL/glut.h"
+#include <string.h>
 #include <math.h>
+#include <GL/glut.h>
+#include <GL/gl.h>
+#include <GL/glu.h>
 
 #define PI   3.141592
 #define P2   1.570796
@@ -33,7 +36,7 @@ Player pl;
 // Utils
 
 float dist(float ax, float ay, float bx, float by, float ang){
-	return(sqrt((bx-ax)*(bx-ax) + (by-ay)*(by-ay)));
+	return(sqrtf((bx-ax)*(bx-ax) + (by-ay)*(by-ay)));
 }
 
 float fixAng(float ang){
@@ -172,8 +175,8 @@ void look(int x, int y){
  
     glutWarpPointer(windowW/2, windowH/2);
 	
-	if(dx < 0){pl.pa-=0.02*sense; if(pl.pa < 0 ){ pl.pa+=VO;} pl.pdx = cos(pl.pa)*5;pl.pdy = sin(pl.pa)*5;}
-	if(dx > 0){pl.pa+=0.02*sense; if(pl.pa > VO){ pl.pa-=VO;} pl.pdx = cos(pl.pa)*5;pl.pdy = sin(pl.pa)*5;}
+	if(dx < 0){pl.pa-=0.02*sense; if(pl.pa < 0 ){ pl.pa+=VO;} pl.pdx = cosf(pl.pa)*5;pl.pdy = sin(pl.pa)*5;}
+	if(dx > 0){pl.pa+=0.02*sense; if(pl.pa > VO){ pl.pa-=VO;} pl.pdx = cosf(pl.pa)*5;pl.pdy = sin(pl.pa)*5;}
 	if(dy < 0){moy+=2*sense; if(moy >= moym){moy=moym;}}
 	if(dy > 0){moy-=2*sense; if(moy <= -moym){moy=-moym;}}
 	
@@ -257,7 +260,7 @@ void drawRays2d(){
 		
 		// Draw the 3D
 		
-		float da = fixAng(pl.pa-ra); distT=distT*cos(da); // fish eye correction
+		float da = fixAng(pl.pa-ra); distT=distT*cosf(da); // fish eye correction
 		
 		float lineH=(mapS*320)/distT; if(lineH>512+(moym*2)){lineH=512+(moym*2);}
 		float lineO=(260-lineH/2);
@@ -309,7 +312,7 @@ void init(){
 	glClearColor(0,0,0,0);
 	gluOrtho2D(0,1024,512,0);
 	windowW = glutGet(GLUT_WINDOW_WIDTH); windowH =glutGet(GLUT_WINDOW_HEIGHT);
-	pl.pa=PI;pl.px=300;pl.py=300;pl.pdx = cos(pl.pa)*5;pl.pdy = sin(pl.pa)*5;
+	pl.pa=PI;pl.px=300;pl.py=300;pl.pdx = cosf(pl.pa)*5;pl.pdy = sin(pl.pa)*5;
 }
 
 int main(int argc, char** argv)

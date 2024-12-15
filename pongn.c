@@ -1,8 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "C:/MinGW/include/GL/glut.h"
+#include <GL/glut.h>
+#include <string.h>
 #include <math.h>
-#include<time.h>
+#include <time.h>
 
 #define FPS 60
 #define PI   3.141592 // 180
@@ -197,6 +198,20 @@ void display(){
     
     glFlush();
     glutSwapBuffers(); // redraw
+}
+
+void reshape(GLint w, GLint h) {
+  glViewport(0, 0, w, h);
+  GLfloat aspect = (GLfloat)w / (GLfloat)h;
+  glMatrixMode(GL_PROJECTION);
+  glLoadIdentity();
+  if (w <= h) {
+    // width is smaller, go from -50 .. 50 in width
+    glOrtho(-50.0, 50.0, -50.0/aspect, 50.0/aspect, -1.0, 1.0);
+  } else {
+    // height is smaller, go from -50 .. 50 in height
+    glOrtho(-50.0*aspect, 50.0*aspect, -50.0, 50.0, -1.0, 1.0);
+  }
 }
 
 void resize(int w, int h){
