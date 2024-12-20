@@ -116,8 +116,6 @@ void drawMap2D(){
 		glVertex2f(walls[i].p2.x,walls[i].p2.y);
 		glEnd();
 	}
-	
-
 }
 
 // Player
