@@ -54,13 +54,14 @@ typedef struct
 {
     uint8_t arr[4][4];
     int8_t x;
-    int8_t y;     
+    int8_t y;
+    uint8_t r; 
     uint8_t size;
 } piece;
 
 typedef struct
 {
-	uint8_t a,s,d,q,e,space;
+	uint8_t a,w,s,d,q,e,space;
 }ButtonKeys;
 
 piece active_piece;
@@ -69,6 +70,8 @@ piece test_piece;
 ButtonKeys Keys;
 uint8_t bag[7] = {0,1,2,3,4,5,6};
 uint8_t bag_pointer=0;
+uint8_t changed = 0;
+char buffer[20];
 
 enum place_states
 {
@@ -107,6 +110,7 @@ enum place_states canPlace(int8_t x,int8_t y,piece *p)
 
 void removeCompleteLines()
 {
+    uint8_t mult = 0;
     for (int8_t y = BOARDHEIGHT-1; y >= 0; y--)
     {
         uint8_t is_complete = 1;
@@ -130,9 +134,10 @@ void removeCompleteLines()
                 
             }
             y++;
-            //score++;
+            mult++;
         }
     }
+    score+=100*mult;
 }
 
 void place(uint8_t x,uint8_t y,piece *p)
@@ -151,23 +156,24 @@ void place(uint8_t x,uint8_t y,piece *p)
         }
     }
     removeCompleteLines();
+    changed = 0;
 }
 
-void Rotate(uint8_t left) 
+void Rotate(uint8_t left,piece *p) 
 { 
-    int dim = test_piece.size;
-    uint8_t npiece[dim][dim];
+    int dim = p->size;
+    uint8_t tmpp[dim][dim];
     for (int i = 0; i < dim; i++)
     {
         for (int j = 0; j < dim; j++)
         {
             if (left)
             {
-                npiece[j][i] = test_piece.arr[i][dim - 1 - j];
+                tmpp[j][i] = p->arr[i][dim - 1 - j];
             } 
             else 
             {
-                npiece[j][i] = test_piece.arr[dim - 1 - i][j];
+                tmpp[j][i] = p->arr[dim - 1 - i][j];
             }
         }
     }
@@ -175,9 +181,10 @@ void Rotate(uint8_t left)
     {
         for (int j = 0; j < dim; j++)
         {
-            test_piece.arr[j][i] = npiece[j][i];
+            p->arr[j][i] = tmpp[j][i];
         }
     }
+    p->r = (p->r + (left ? 1 : 3))% 4;
     
 }
 
@@ -192,7 +199,6 @@ void changePiece(uint8_t size ,const uint8_t (*piece_array)[size])
         }   
     }
 }
-
 
 void shuffleBag()
 {
@@ -234,8 +240,9 @@ void SpawnPiece()
     default:
         break;
     }
-    active_piece.x = 0;
+    active_piece.x = 4;
     active_piece.y = 0;
+    active_piece.r = 0;
     bag_pointer++;
     if(bag_pointer > 6)
     {
@@ -250,14 +257,18 @@ void holdPiece()
     {
         memcpy(&test_piece,&hold_piece,sizeof(piece));
         memcpy(&hold_piece,&active_piece,sizeof(piece));
-        memcpy(&hold_piece,&test_piece,sizeof(piece));
-        active_piece.x = 0;
+        memcpy(&active_piece,&test_piece,sizeof(piece));
+        active_piece.x = 4;
         active_piece.y = 0;
     }
     else
     {
         memcpy(&hold_piece,&active_piece,sizeof(piece));
         SpawnPiece();
+    }
+    while (hold_piece.r != 0)
+    {
+        Rotate(0,&hold_piece);
     }
 }
 
@@ -308,13 +319,18 @@ void update()
         if(Keys.q || Keys.e) 
         { 
             memcpy(&test_piece,&active_piece,sizeof(piece));
-            Rotate(Keys.q); 
+            Rotate(Keys.q,&test_piece); 
             uint8_t ps = canPlace(active_piece.x, active_piece.y,&test_piece); 
             if (ps == CAN_PLACE) 
             { 
                 memcpy(&active_piece,&test_piece,sizeof(piece)); 
             } 
             key_board_elapsed_time = 0; 
+        }
+        if(Keys.w && !changed)
+        { 
+            holdPiece();
+            changed = 1;
         } 
         if(Keys.s)
         { 
@@ -340,21 +356,31 @@ void reshape(GLint w, GLint h)
   }
 }
 
-void RenderString(const char* s){  
-	int i,l=strlen(s);
+void RenderString(){  
+	int i,l = 5;
 
 	glMatrixMode(GL_MODELVIEW);
 	glPushMatrix();
 	glLoadIdentity();  
 	
 	glColor3f(1, 1, 1); // Green
-	glRasterPos2i(0, 0);
+    glTranslatef(18,25,0);
+	glScalef(.025,.025,0);
 	
-
 	for (i=0; i<l; ++i)
 	{
-	    char c = s[i];
-	    glutStrokeCharacter(GLUT_STROKE_MONO_ROMAN, c);
+	    glutStrokeCharacter(GLUT_STROKE_MONO_ROMAN, "Score"[i]);
+	}
+    glTranslatef(-524,-200,0);
+    sprintf(buffer,"%05d",score);
+    for (i=0; i<l; ++i)
+	{
+	    glutStrokeCharacter(GLUT_STROKE_MONO_ROMAN, buffer[i]);
+	}
+    glTranslatef(-524,-200,0);
+    for (i=0; i<l; ++i)
+	{
+	    glutStrokeCharacter(GLUT_STROKE_MONO_ROMAN, "Hold"[i]);
 	}
 	
 	glMatrixMode(GL_MODELVIEW);
@@ -371,18 +397,19 @@ void display()
 
     glTranslatef(-15,-30,0);
 
-    glColor3f(1.0, 1.0, 1.0);
+    // board
+
     for(uint8_t i = 0;i <BOARDWIDTH;i++)
     {
         for(uint8_t j = 0;j <BOARDHEIGHT;j++)
         {   
             if(board[i][j] != 0)
             {
-                glColor3f(1.0, 1.0, 1.0);
+                glColor3f(.17, .18, .27);
             }
             else
             {
-                glColor3f(.0, .5, .0);
+                glColor3f(1, 1, .50);
             }
             glRectf((BOXWIDTH  * i) + (GRIDGAP * i),
                     (BOXHEIGHT * (BOARDHEIGHT - j)) + (GRIDGAP * (BOARDHEIGHT - j)), 
@@ -390,7 +417,10 @@ void display()
                     (BOXHEIGHT * (BOARDHEIGHT - (j+1)) + (GRIDGAP * (BOARDHEIGHT - j))));
         }   
     }
-    glColor3f(0.1, 0.2, 0.3);
+    
+    // piece
+
+    glColor3f(.1,.59,.54);
     for(uint8_t i = 0;i <active_piece.size;i++)
     {
         for(uint8_t j = 0;j <active_piece.size;j++)
@@ -405,10 +435,27 @@ void display()
         }   
     }
 
+    for(uint8_t i = 0;i <hold_piece.size;i++)
+    {
+        for(uint8_t j = 0;j <hold_piece.size;j++)
+        {   
+            //
+            if(hold_piece.arr[i][j] != 0){
+                glRectf((BOXWIDTH  * (i + (20 - hold_piece.size))),
+                        (BOXHEIGHT * (BOARDHEIGHT - (j - 2))),
+                        (BOXWIDTH  * (i + 1 + (20 - hold_piece.size))),
+                        (BOXHEIGHT * (BOARDHEIGHT -(j + 1 - 2 ))));
+            }
+        }   
+    }
+
+    // border
+    glColor3f(0.17, 0.18, 0.27);
     glRecti(-3,60,-1,-1);
     glRecti(30,60,32,-1);
     glRecti(-3,0,32,-2);
-    RenderString("Score");
+
+    RenderString();
 
     glFlush();
     glutSwapBuffers();  
@@ -425,7 +472,7 @@ void init()
     glClearColor(.0,.0,.0,1.0);
     shuffleBag();
     SpawnPiece();
-
+    hold_piece.size = 0;
     // clear board
     for(uint8_t x = 0 ; x < BOARDWIDTH; x++)
     {
@@ -443,6 +490,7 @@ void keysUp(unsigned char key, int x, int y){
     if(key=='s'){Keys.s=0;}
     if(key=='q'){Keys.q=0;}
     if(key=='e'){Keys.e=0;}
+    if(key=='w'){Keys.w=0;}
     if(key==32){Keys.space=0;}
 }
 
@@ -452,6 +500,7 @@ void keysDown(unsigned char key, int x, int y){
     if(key=='s'){Keys.s=1;}
     if(key=='q'){Keys.q=1;}
     if(key=='e'){Keys.e=1;}
+    if(key=='w'){Keys.w=1;}
     if(key==32){Keys.space=1;}
 }
 
@@ -461,7 +510,7 @@ int main(int argc, char** argv) {
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
     glutInitWindowPosition(80, 80);
     glutInitWindowSize(800, 500);
-    glutCreateWindow("Spinning Square");
+    glutCreateWindow("Tetric");
     glutReshapeFunc(reshape);
     glutDisplayFunc(display);
     //glutMouseFunc(mouse);
